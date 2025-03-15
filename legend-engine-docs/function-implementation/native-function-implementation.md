@@ -267,6 +267,89 @@ dynaFnToSql('geoDistance', $allStates, ^ToSql(
     transform={p:String[4]|$p})),
 ```
 
+## Java Implementation for Native Functions
+
+When implementing native functions in Legend Engine, you also need to provide Java implementations that handle the platform-specific behavior. This section demonstrates how to implement the Java side of our hypothetical `geoDistance` function.
+
+### 1. Java Helper Method
+
+First, add a static method to `FunctionsHelper.java` that will throw an appropriate exception for unsupported platforms:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsHelper.java
+
+public static double geoDistance(double lat1, double long1, double lat2, double long2, SourceInformation sourceInformation)
+{
+    throw new PureExecutionException(
+        sourceInformation,
+        "The geoDistance function is only available on Snowflake. This function cannot be executed in Pure.",
+        Stacks.mutable.empty()
+    );
+}
+```
+
+### 2. Native Function Implementation
+
+Next, create a class that extends `AbstractNativeFunctionGeneric` to connect the Pure function to the Java implementation:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/natives/geo/GeoDistance.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled.natives.geo;
+
+import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.AbstractNativeFunctionGeneric;
+
+public class GeoDistance extends AbstractNativeFunctionGeneric
+{
+    public GeoDistance()
+    {
+        super("FunctionsGen.geoDistance", 
+              new Class[]{Double.class, Double.class, Double.class, Double.class, SourceInformation.class}, 
+              "geoDistance_Float_1__Float_1__Float_1__Float_1__Float_1_");
+    }
+}
+```
+
+### 3. Register the Native Function
+
+Register the native function in `FunctionsExtensionCompiled.java`:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsExtensionCompiled.java
+
+@Override
+public List<NativeFunction> getExtraNativeFunctions()
+{
+    return Lists.mutable.with(
+        // ... existing functions
+        new GeoDistance()
+    );
+}
+```
+
+### 4. Update FunctionsGen.java
+
+Add the function to `FunctionsGen.java` to make it available to the generated code:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/resources/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsGen.java
+
+public static double geoDistance(double lat1, double long1, double lat2, double long2, SourceInformation sourceInformation)
+{
+    return org.finos.legend.pure.runtime.java.extension.functions.compiled.FunctionsHelper.geoDistance(lat1, long1, lat2, long2, sourceInformation);
+}
+```
+
+### 5. Handling Platform-Specific Execution
+
+For platform-specific functions, the Java implementation primarily serves to:
+
+1. Provide appropriate error messages when the function is executed in Pure
+2. Support the compilation process by defining the function signature
+3. Enable proper error reporting with source information
+
+The actual execution of the function happens in the database when the SQL is generated and executed, not in the Java implementation.
+
 ## Conclusion
 
 Implementing native functions in Legend Engine allows you to leverage the full power of specific database platforms while maintaining a consistent interface in your Pure code. By following this guide, you can create robust, well-tested native functions that provide optimal performance on supported platforms.
@@ -274,6 +357,7 @@ Implementing native functions in Legend Engine allows you to leverage the full p
 Remember to:
 1. Clearly mark functions as platform-specific with `<<PCT.platformOnly>>`
 2. Implement database-specific adapters for supported platforms
-3. Document platform limitations and version requirements
-4. Configure PCT tests with appropriate expected failures
-5. Write comprehensive tests for supported platforms
+3. Provide appropriate Java implementations that handle unsupported platforms gracefully
+4. Document platform limitations and version requirements
+5. Configure PCT tests with appropriate expected failures
+6. Write comprehensive tests for supported platforms

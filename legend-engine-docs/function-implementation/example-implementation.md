@@ -202,6 +202,75 @@ Update the function documentation to include:
 4. Examples of usage
 5. Any platform-specific considerations
 
+## 10. Java Implementation
+
+When a Pure function is used in Legend Engine, it needs a corresponding Java implementation. This section demonstrates how to implement the Java side of our `containsIgnoreCase` function.
+
+### 10.1 Java Helper Method
+
+First, add a static method to `FunctionsHelper.java`:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsHelper.java
+
+public static boolean containsIgnoreCase(String source, String substring)
+{
+    return source != null && substring != null && source.toLowerCase().contains(substring.toLowerCase());
+}
+```
+
+### 10.2 Native Function Implementation
+
+Next, create a class that extends `AbstractNativeFunctionGeneric` to connect the Pure function to the Java implementation:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/natives/string/ContainsIgnoreCase.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled.natives.string;
+
+import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.AbstractNativeFunctionGeneric;
+
+public class ContainsIgnoreCase extends AbstractNativeFunctionGeneric
+{
+    public ContainsIgnoreCase()
+    {
+        super("FunctionsGen.containsIgnoreCase", 
+              new Class[]{String.class, String.class}, 
+              "containsIgnoreCase_String_$0_1$__String_1__Boolean_1_");
+    }
+}
+```
+
+### 10.3 Register the Native Function
+
+Finally, register the native function in `FunctionsExtensionCompiled.java`:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsExtensionCompiled.java
+
+@Override
+public List<NativeFunction> getExtraNativeFunctions()
+{
+    return Lists.mutable.with(
+        // ... existing functions
+        new ContainsIgnoreCase()
+    );
+}
+```
+
+### 10.4 Update FunctionsGen.java
+
+Add the function to `FunctionsGen.java` to make it available to the generated code:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/main/resources/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsGen.java
+
+public static boolean containsIgnoreCase(String source, String substring)
+{
+    return org.finos.legend.pure.runtime.java.extension.functions.compiled.FunctionsHelper.containsIgnoreCase(source, substring);
+}
+```
+
 ## Conclusion
 
-This example demonstrates the complete process of implementing a new `containsIgnoreCase` function in Legend Engine. By following this pattern, you can implement other functions while ensuring they work consistently across all supported database platforms.
+This example demonstrates the complete process of implementing a new `containsIgnoreCase` function in Legend Engine, from Pure definition to Java implementation. By following this pattern, you can implement other functions while ensuring they work consistently across all supported database platforms.

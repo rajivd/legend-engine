@@ -8,8 +8,9 @@ This guide provides step-by-step instructions for implementing new functions in 
 2. [Step-by-Step Implementation Guide](#step-by-step-implementation-guide)
 3. [Template Code for Function Implementation](#template-code-for-function-implementation)
 4. [Testing Your Function Implementation](#testing-your-function-implementation)
-5. [Parameterized Compatibility Testing (PCT)](#parameterized-compatibility-testing-pct)
-6. [Common Pitfalls and Solutions](#common-pitfalls-and-solutions)
+5. [Java Implementation of Pure Functions](#java-implementation-of-pure-functions)
+6. [Parameterized Compatibility Testing (PCT)](#parameterized-compatibility-testing-pct)
+7. [Common Pitfalls and Solutions](#common-pitfalls-and-solutions)
 
 ## Understanding Function Implementation in Legend Engine
 
@@ -198,6 +199,126 @@ function <<paramTest.Test>> meta::relational::tests::dbSpecificTests::sqlQueryTe
   runDynaFunctionDatabaseTest($dynaFunc, $expected, $config);
 }
 ```
+
+## Java Implementation of Pure Functions
+
+When a Pure function is used in Legend Engine, it needs a corresponding Java implementation to support execution in the Java runtime. This section explains how Pure functions are compiled to Java.
+
+### 1. The Compilation Process
+
+Pure functions are compiled to Java through a multi-step process:
+
+1. **Pure Definition**: The function is defined in Pure language
+2. **Java Helper Method**: A static method is implemented in `FunctionsHelper.java`
+3. **Native Function Class**: A class extending `AbstractNativeFunctionGeneric` is created
+4. **Registration**: The native function is registered in `FunctionsExtensionCompiled.java`
+5. **Generated Code**: The function is made available to generated code via `FunctionsGen.java`
+
+### 2. Java Helper Method
+
+The core implementation of the function is provided as a static method in `FunctionsHelper.java`:
+
+```java
+// In FunctionsHelper.java
+public static ReturnType functionName(Type1 param1, Type2 param2)
+{
+    // Java implementation of the function
+    // This will be used when executing in Java
+}
+```
+
+### 3. Native Function Class
+
+A class extending `AbstractNativeFunctionGeneric` connects the Pure function to the Java implementation:
+
+```java
+// In a new class file
+public class FunctionName extends AbstractNativeFunctionGeneric
+{
+    public FunctionName()
+    {
+        super("FunctionsGen.functionName", 
+              new Class[]{Type1.class, Type2.class}, 
+              "functionName_Type1_m__Type2_n__ReturnType_p_");
+    }
+}
+```
+
+The constructor parameters are:
+- The method name in `FunctionsGen` that will be called
+- The Java parameter types
+- The Pure function signature
+
+### 4. Function Registration
+
+The native function is registered in `FunctionsExtensionCompiled.java`:
+
+```java
+@Override
+public List<NativeFunction> getExtraNativeFunctions()
+{
+    return Lists.mutable.with(
+        // ... existing functions
+        new FunctionName()
+    );
+}
+```
+
+### 5. FunctionsGen Integration
+
+Finally, the function is made available to generated code via `FunctionsGen.java`:
+
+```java
+public static ReturnType functionName(Type1 param1, Type2 param2)
+{
+    return org.finos.legend.pure.runtime.java.extension.functions.compiled.FunctionsHelper.functionName(param1, param2);
+}
+```
+
+### 6. Java Implementation Patterns
+
+Different types of functions follow different patterns:
+
+#### Regular Functions
+
+Regular functions have a direct Java implementation:
+
+```java
+// In FunctionsHelper.java
+public static boolean contains(String source, String substring)
+{
+    return source != null && source.contains(substring);
+}
+```
+
+#### Platform-Specific Functions
+
+Platform-specific functions throw an exception when executed in Pure:
+
+```java
+// In FunctionsHelper.java
+public static double geoDistance(double lat1, double long1, double lat2, double long2, SourceInformation sourceInformation)
+{
+    throw new PureExecutionException(
+        sourceInformation,
+        "This function is only available on specific platforms",
+        Stacks.mutable.empty()
+    );
+}
+```
+
+### 7. Java-Pure Type Mapping
+
+When implementing Java methods for Pure functions, use the following type mappings:
+
+| Pure Type | Java Type |
+|-----------|-----------|
+| String    | String    |
+| Integer   | Long      |
+| Float     | Double    |
+| Boolean   | Boolean   |
+| Date      | PureDate  |
+| Any       | Object    |
 
 ## Parameterized Compatibility Testing (PCT)
 

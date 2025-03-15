@@ -14,6 +14,7 @@ This documentation is organized into the following sections:
    - [Architecture Overview](architecture/README.md)
    - [Module Structure](modules/README.md)
    - [Pure Language](pure-language/README.md)
+   - [Pure Compilation Pipeline](pure-compilation/README.md)
 
 2. **Extension Mechanisms**
    - [Extension Mechanisms](extensions/README.md)

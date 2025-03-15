@@ -184,6 +184,8 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
     dynaFnToSql('joinStrings',            $allStates,            ^ToSql(format='string_agg(%s,%s)')),
     dynaFnToSql('last',                   $allStates,            ^ToSql(format='last(%s)')),
     dynaFnToSql('length',                 $allStates,            ^ToSql(format='length(%s)')),
+    dynaFnToSql('contains',               $allStates,            ^ToSql(format='contains(%s, %s)', transform={p:String[2]|$p})),
+    dynaFnToSql('in',                     $allStates,            ^ToSql(format='%s in %s', transform={p:String[2] | if($p->at(1)->startsWith('(') && $p->at(1)->endsWith(')'), | $p, | [$p->at(0), ('(' + $p->at(1) + ')')])})),
     dynaFnToSql('lpad',                   $allStates,            ^ToSql(format='lpad(%s,%s,%s)', transform=processPaddingParams_String_MANY__String_MANY_)),
     dynaFnToSql('matches',                $allStates,            ^ToSql(format= 'regexp_matches(%s,%s)', transform={p:String[2]|$p})),
     dynaFnToSql('md5',                    $allStates,            ^ToSql(format='md5(%s)')),

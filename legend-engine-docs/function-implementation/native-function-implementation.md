@@ -350,6 +350,146 @@ For platform-specific functions, the Java implementation primarily serves to:
 
 The actual execution of the function happens in the database when the SQL is generated and executed, not in the Java implementation.
 
+## Java Implementation Testing for Native Functions
+
+After implementing the Java side of a native function, you need to test it thoroughly to ensure it behaves correctly. This section demonstrates how to test the Java implementation of platform-specific functions.
+
+### 1. Unit Tests for Java Helper Methods
+
+First, create unit tests for the `FunctionsHelper` method that verify it throws the correct exception:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsHelperTest.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.finos.legend.pure.m3.exception.PureExecutionException;
+import org.finos.legend.pure.m4.coreinstance.SourceInformation;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class FunctionsHelperTest
+{
+    @Test
+    public void testGeoDistance()
+    {
+        // Create a source information object for error reporting
+        SourceInformation sourceInformation = new SourceInformation("test.pure", 1, 1, 1, 20);
+        
+        try
+        {
+            // Call the function and expect an exception
+            FunctionsHelper.geoDistance(40.7128, -74.0060, 40.7128, -74.0060, sourceInformation);
+            Assert.fail("Expected PureExecutionException to be thrown");
+        }
+        catch (PureExecutionException e)
+        {
+            // Verify the exception message
+            Assert.assertTrue(e.getMessage().contains("only available on Snowflake"));
+            Assert.assertEquals(sourceInformation, e.getSourceInformation());
+        }
+    }
+}
+```
+
+### 2. Integration Tests for Pure-to-Java Compilation
+
+Next, create integration tests that verify the function throws the correct exception when compiled from Pure to Java:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/Test_Pure_Java_PlatformSpecificFunctions.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.finos.legend.pure.m3.exception.PureExecutionException;
+import org.finos.legend.pure.m3.execution.FunctionExecution;
+import org.finos.legend.pure.m3.tests.function.base.PureExpressionTest;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class Test_Pure_Java_PlatformSpecificFunctions extends PureExpressionTest
+{
+    @Test
+    public void testGeoDistanceCompilation()
+    {
+        try
+        {
+            // Compile and execute a Pure expression that calls the platform-specific function
+            compileAndExecute("geoDistance(40.7128, -74.0060, 40.7128, -74.0060)");
+            Assert.fail("Expected PureExecutionException to be thrown");
+        }
+        catch (PureExecutionException e)
+        {
+            // Verify the exception message
+            Assert.assertTrue(e.getMessage().contains("only available on Snowflake"));
+        }
+    }
+    
+    @Override
+    protected FunctionExecution getFunctionExecution()
+    {
+        return this.getCompiledFunctionExecution();
+    }
+}
+```
+
+### 3. Testing Native Function Registration
+
+Finally, verify that the native function is properly registered:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/NativeFunctionRegistrationTest.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.eclipse.collections.api.list.ListIterable;
+import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.NativeFunction;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class NativeFunctionRegistrationTest
+{
+    @Test
+    public void testGeoDistanceRegistration()
+    {
+        // Get the list of native functions from the extension
+        FunctionsExtensionCompiled extension = new FunctionsExtensionCompiled();
+        ListIterable<NativeFunction> nativeFunctions = extension.getExtraNativeFunctions();
+        
+        // Verify that our function is in the list
+        boolean found = false;
+        for (NativeFunction function : nativeFunctions)
+        {
+            if (function.getName().equals("geoDistance_Float_1__Float_1__Float_1__Float_1__Float_1_"))
+            {
+                found = true;
+                break;
+            }
+        }
+        
+        Assert.assertTrue("GeoDistance function should be registered", found);
+    }
+}
+```
+
+### 4. Testing Platform-Specific Behavior
+
+For platform-specific functions, it's important to test that:
+
+1. The function throws the correct exception with a clear message when executed in Pure
+2. The exception includes the source information for proper error reporting
+3. The function is properly registered in the native function registry
+
+### 5. Running the Tests
+
+To run the tests, use the following Maven command:
+
+```bash
+mvn test -Dtest=FunctionsHelperTest,Test_Pure_Java_PlatformSpecificFunctions,NativeFunctionRegistrationTest
+```
+
+This will run all the tests for the Java implementation of the platform-specific function.
+
 ## Conclusion
 
 Implementing native functions in Legend Engine allows you to leverage the full power of specific database platforms while maintaining a consistent interface in your Pure code. By following this guide, you can create robust, well-tested native functions that provide optimal performance on supported platforms.
@@ -361,3 +501,4 @@ Remember to:
 4. Document platform limitations and version requirements
 5. Configure PCT tests with appropriate expected failures
 6. Write comprehensive tests for supported platforms
+7. Test Java implementations to ensure proper error handling

@@ -271,6 +271,137 @@ public static boolean containsIgnoreCase(String source, String substring)
 }
 ```
 
+## 11. Java Implementation Testing
+
+After implementing the Java side of the `containsIgnoreCase` function, we need to test it thoroughly to ensure it works correctly. This section demonstrates how to test the Java implementation.
+
+### 11.1 Unit Tests for Java Helper Methods
+
+First, create unit tests for the `FunctionsHelper.containsIgnoreCase` method:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/FunctionsHelperTest.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+public class FunctionsHelperTest
+{
+    @Test
+    public void testContainsIgnoreCase()
+    {
+        // Basic functionality
+        Assert.assertTrue(FunctionsHelper.containsIgnoreCase("Hello World", "hello"));
+        Assert.assertTrue(FunctionsHelper.containsIgnoreCase("Hello World", "WORLD"));
+        Assert.assertTrue(FunctionsHelper.containsIgnoreCase("Hello World", "o W"));
+        
+        // Edge cases
+        Assert.assertTrue(FunctionsHelper.containsIgnoreCase("Hello World", ""));
+        Assert.assertFalse(FunctionsHelper.containsIgnoreCase("", "hello"));
+        Assert.assertFalse(FunctionsHelper.containsIgnoreCase(null, "hello"));
+        
+        // Negative cases
+        Assert.assertFalse(FunctionsHelper.containsIgnoreCase("Hello World", "goodbye"));
+        Assert.assertFalse(FunctionsHelper.containsIgnoreCase("Hello World", "Worlds"));
+    }
+}
+```
+
+### 11.2 Integration Tests for Pure-to-Java Compilation
+
+Next, create integration tests that verify the function works correctly when compiled from Pure to Java:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/Test_Pure_Java_Functions.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.finos.legend.pure.m3.execution.FunctionExecution;
+import org.finos.legend.pure.m3.tests.function.base.PureExpressionTest;
+import org.finos.legend.pure.m4.coreinstance.CoreInstance;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class Test_Pure_Java_Functions extends PureExpressionTest
+{
+    @Test
+    public void testContainsIgnoreCaseCompilation()
+    {
+        // Test basic functionality
+        CoreInstance result1 = compileAndExecute("'Hello World'->containsIgnoreCase('hello')");
+        Assert.assertEquals(true, this.getResultBoolean(result1));
+        
+        // Test edge cases
+        CoreInstance result2 = compileAndExecute("'Hello World'->containsIgnoreCase('')");
+        Assert.assertEquals(true, this.getResultBoolean(result2));
+        
+        CoreInstance result3 = compileAndExecute("''->containsIgnoreCase('hello')");
+        Assert.assertEquals(false, this.getResultBoolean(result3));
+        
+        // Test negative cases
+        CoreInstance result4 = compileAndExecute("'Hello World'->containsIgnoreCase('goodbye')");
+        Assert.assertEquals(false, this.getResultBoolean(result4));
+    }
+    
+    @Override
+    protected FunctionExecution getFunctionExecution()
+    {
+        return this.getCompiledFunctionExecution();
+    }
+}
+```
+
+### 11.3 Testing Native Function Registration
+
+Finally, verify that the native function is properly registered:
+
+```java
+// File: legend-engine-pure-runtime-java-extension-compiled-functions-unclassified/src/test/java/org/finos/legend/pure/runtime/java/extension/functions/compiled/NativeFunctionRegistrationTest.java
+
+package org.finos.legend.pure.runtime.java.extension.functions.compiled;
+
+import org.eclipse.collections.api.list.ListIterable;
+import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.NativeFunction;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class NativeFunctionRegistrationTest
+{
+    @Test
+    public void testContainsIgnoreCaseRegistration()
+    {
+        // Get the list of native functions from the extension
+        FunctionsExtensionCompiled extension = new FunctionsExtensionCompiled();
+        ListIterable<NativeFunction> nativeFunctions = extension.getExtraNativeFunctions();
+        
+        // Verify that our function is in the list
+        boolean found = false;
+        for (NativeFunction function : nativeFunctions)
+        {
+            if (function.getName().equals("containsIgnoreCase_String_$0_1$__String_1__Boolean_1_"))
+            {
+                found = true;
+                break;
+            }
+        }
+        
+        Assert.assertTrue("ContainsIgnoreCase function should be registered", found);
+    }
+}
+```
+
+### 11.4 Running the Tests
+
+To run the tests, use the following Maven command:
+
+```bash
+mvn test -Dtest=FunctionsHelperTest,Test_Pure_Java_Functions,NativeFunctionRegistrationTest
+```
+
+This will run all the tests for the Java implementation of the `containsIgnoreCase` function.
+
 ## Conclusion
 
-This example demonstrates the complete process of implementing a new `containsIgnoreCase` function in Legend Engine, from Pure definition to Java implementation. By following this pattern, you can implement other functions while ensuring they work consistently across all supported database platforms.
+This example demonstrates the complete process of implementing a new `containsIgnoreCase` function in Legend Engine, from Pure definition to Java implementation and testing. By following this pattern, you can implement other functions while ensuring they work consistently across all supported database platforms.

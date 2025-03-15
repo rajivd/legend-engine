@@ -387,6 +387,137 @@ dynaFnToSql('functionName', $allStates, ^ToSql(format='OPTIMIZED_FUNCTION(%s, %s
 dynaFnToSql('functionName', $allStates, ^ToSql(format='ALTERNATIVE_APPROACH(%s, %s)', transform={p:String[2]|$p})),
 ```
 
+## Java Implementation Testing
+
+When implementing Java versions of Pure functions, you need to test both the Java implementation directly and through the Pure-to-Java compilation process:
+
+### 1. Unit Tests for Java Helper Methods
+
+Create JUnit tests for the Java helper methods in `FunctionsHelper.java`:
+
+```java
+// In FunctionsHelperTest.java
+@Test
+public void testFunctionName()
+{
+    // Test basic functionality
+    assertEquals(expectedResult, FunctionsHelper.functionName(param1, param2));
+    
+    // Test edge cases
+    assertEquals(edgeCaseResult, FunctionsHelper.functionName(edgeParam1, edgeParam2));
+    
+    // Test null handling
+    assertNull(FunctionsHelper.functionName(null, param2));
+    
+    // Test exceptions
+    assertThrows(IllegalArgumentException.class, () -> FunctionsHelper.functionName(invalidParam1, invalidParam2));
+}
+```
+
+### 2. Integration Tests for Pure-to-Java Compilation
+
+Test the function through the Pure-to-Java compilation process:
+
+```java
+// In Test_Pure_Java_Functions.java
+@Test
+public void testFunctionNameCompilation()
+{
+    // Create a Pure expression that uses the function
+    String pureFunctionCall = "functionName('test', 123)";
+    
+    // Compile and execute the Pure expression
+    Object result = compileAndExecute(pureFunctionCall);
+    
+    // Verify the result
+    assertEquals(expectedResult, result);
+}
+```
+
+### 3. Testing Platform-Specific Functions
+
+For platform-specific functions that throw exceptions in Pure:
+
+```java
+@Test
+public void testPlatformSpecificFunction()
+{
+    // Test that the function throws the correct exception in Pure
+    String pureFunctionCall = "platformSpecificFunction(param1, param2)";
+    
+    // Verify that the function throws a PureExecutionException
+    PureExecutionException exception = assertThrows(
+        PureExecutionException.class,
+        () -> compileAndExecute(pureFunctionCall)
+    );
+    
+    // Verify the exception message
+    assertTrue(exception.getMessage().contains("only available on specific platforms"));
+}
+```
+
+### 4. Testing Native Function Registration
+
+Verify that the native function is properly registered:
+
+```java
+@Test
+public void testNativeFunctionRegistration()
+{
+    // Get the list of native functions from the extension
+    FunctionsExtensionCompiled extension = new FunctionsExtensionCompiled();
+    List<NativeFunction> nativeFunctions = extension.getExtraNativeFunctions();
+    
+    // Verify that our function is in the list
+    assertTrue(nativeFunctions.stream()
+        .anyMatch(f -> f.getName().equals("functionName_Type1_m__Type2_n__ReturnType_p_")));
+}
+```
+
+### 5. Running Java Implementation Tests
+
+To run the Java implementation tests, use the following Maven commands:
+
+```bash
+# Run all tests in a specific test class
+mvn test -Dtest=FunctionsHelperTest
+
+# Run a specific test method
+mvn test -Dtest=FunctionsHelperTest#testFunctionName
+
+# Run multiple test classes
+mvn test -Dtest=FunctionsHelperTest,Test_Pure_Java_Functions,NativeFunctionRegistrationTest
+```
+
+### 6. Testing Best Practices for Java Implementations
+
+When testing Java implementations of Pure functions, follow these best practices:
+
+1. **Test Both Direct and Compiled Execution**
+   - Test the Java helper methods directly
+   - Test the function through the Pure-to-Java compilation process
+
+2. **Test Error Handling**
+   - Verify that appropriate exceptions are thrown for invalid inputs
+   - For platform-specific functions, verify that the correct exception is thrown with a clear message
+
+3. **Test Edge Cases**
+   - Test with null inputs
+   - Test with empty collections or strings
+   - Test with boundary values
+
+4. **Test Registration**
+   - Verify that the function is properly registered in the native function registry
+   - Verify that the function signature matches the Pure function signature
+
+5. **Test Performance (Optional)**
+   - For performance-critical functions, add performance tests
+   - Compare performance with alternative implementations
+
+6. **Test Thread Safety (If Applicable)**
+   - For functions that might be used in multi-threaded contexts, test thread safety
+   - Verify that the function behaves correctly when called concurrently
+
 ## Conclusion
 
 Implementing new functions in Legend Engine requires understanding both the Pure language semantics and the target platform specifics. By following this guide, you can create robust, well-tested functions that work consistently across all supported platforms.
@@ -395,5 +526,5 @@ Remember to:
 1. Start with a clear function specification
 2. Implement the Pure reference implementation
 3. Add platform-specific translations
-4. Write comprehensive tests
+4. Write comprehensive tests for both Pure and Java implementations
 5. Document any limitations or expected failures
